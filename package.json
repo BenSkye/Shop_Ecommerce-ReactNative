@@ -11,14 +11,21 @@
   "dependencies": {
     "@react-native-async-storage/async-storage": "^1.23.1",
     "@react-navigation/bottom-tabs": "^6.6.1",
-    "expo": "~51.0.28",
+    "@react-navigation/native-stack": "^6.11.0",
+    "axios": "^1.7.7",
+    "expo": "^51.0.37",
+    "expo-linear-gradient": "~13.0.2",
     "expo-status-bar": "~1.12.1",
+    "main-code": "file:",
     "react": "18.2.0",
-    "react-native": "0.74.5"
+    "react-native": "0.74.5",
+    "react-native-vector-icons": "^10.2.0"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
     "@types/react": "~18.2.45",
+    "@types/react-native": "^0.72.8",
+    "@types/react-native-vector-icons": "^6.4.18",
     "typescript": "~5.3.3"
   },
   "private": true

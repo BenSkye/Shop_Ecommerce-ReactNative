@@ -4,7 +4,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const FavoritesContext = createContext({
     favorites: [],
     toggleFavorite: (item: any) => { },
-    removeFavorite: (id: number) => { }
+    removeFavorite: (id: number) => { },
+    removeMultipleFavorites: (ids: number[]) => { } // Thêm hàm xóa nhiều
 });
 
 export const useFavorites = () => useContext(FavoritesContext);
@@ -39,8 +40,14 @@ const FavoritesProvider = ({ children }) => {
         saveFavorites(updatedFavorites);
     };
 
+    // Hàm xóa nhiều mục yêu thích
+    const removeMultipleFavorites = (ids) => {
+        const updatedFavorites = favorites.filter(fav => !ids.includes(fav.id));
+        saveFavorites(updatedFavorites);
+    };
+
     return (
-        <FavoritesContext.Provider value={{ favorites, toggleFavorite, removeFavorite }}>
+        <FavoritesContext.Provider value={{ favorites, toggleFavorite, removeFavorite, removeMultipleFavorites }}>
             {children}
         </FavoritesContext.Provider>
     );

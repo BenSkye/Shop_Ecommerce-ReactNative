@@ -1,3 +1,4 @@
+// AppNavigator.tsx
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -5,9 +6,10 @@ import HomeScreen from '../screens/HomeSreen';
 import FavoritesScreen from '../screens/FavoritesScreen';
 import DetailScreen from '../screens/DetailsScreen';
 import { Ionicons } from '@expo/vector-icons';
+import { RootTabParamList, RootStackParamList } from '../types/types';
 
-const Tab = createBottomTabNavigator();
-const Stack = createNativeStackNavigator();
+const Tab = createBottomTabNavigator<RootTabParamList>(); // Sử dụng RootTabParamList
+const Stack = createNativeStackNavigator<RootStackParamList>(); // Sử dụng RootStackParamList
 
 const TabNavigator = () => (
     <Tab.Navigator>

@@ -8,7 +8,7 @@ interface ArtToolCardProps {
         artName: string;
         price: number;
         image: string;
-        limitedTimeDeal: number; // Discount as a percentage (e.g., 0.2 for 20%)
+        limitedTimeDeal: number;
     };
     isFavorite: boolean;
     onPress: () => void;

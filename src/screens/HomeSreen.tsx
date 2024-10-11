@@ -5,6 +5,7 @@ import { useFavorites } from '../context/FavoritesContext';
 import ArtToolCard from '../components/ArtToolCard';
 import BackToTopButton from '../components/BackToTopButton';
 import BrandFilter from '../components/BrandFilter';
+import Icon from 'react-native-vector-icons/FontAwesome';
 
 interface ArtTool {
     id: string;
@@ -83,6 +84,7 @@ const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     const handleSuggestionSelect = (suggestion: ArtTool) => {
         setSearchTerm(suggestion.artName); // Cập nhật term khi chọn gợi ý
         setShowSuggestions(false); // Ẩn dropdown sau khi chọn
+        navigation.navigate('Detail', { item: suggestion });
     };
 
     const renderArtTool = ({ item }: { item: ArtTool }) => {
@@ -110,6 +112,21 @@ const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
         flatListRef.current?.scrollToOffset({ animated: true, offset: 0 });
     };
 
+    const SearchInput = ({ value, onChangeText }) => {
+        return (
+            <View style={styles.searchContainer}>
+                <Icon name="search" size={20} color="#999" style={styles.searchIcon} />
+                <TextInput
+                    style={styles.searchInput}
+                    placeholder="Search by name or brand"
+                    value={value}
+                    onChangeText={onChangeText}
+                    placeholderTextColor="#999"
+                />
+            </View>
+        );
+    };
+
     return (
         <View style={styles.container}>
             <FlatList
@@ -120,24 +137,19 @@ const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
                 numColumns={2}
                 ListHeaderComponent={
                     <>
-                        <TextInput
-                            style={styles.searchInput}
-                            placeholder="Search by name or brand"
-                            value={searchTerm}
-                            onChangeText={setSearchTerm}
-                        />
+                        <SearchInput value={searchTerm} onChangeText={setSearchTerm} />
                         {showSuggestions && (
                             <ScrollView
                                 style={styles.suggestionsContainer}
-                                nestedScrollEnabled={true} // Cho phép cuộn trong FlatList
-                                contentContainerStyle={styles.suggestionsContentContainer} // Đảm bảo các gợi ý được hiển thị đúng
+                                nestedScrollEnabled={true}
+                                contentContainerStyle={styles.suggestionsContentContainer}
                             >
                                 {suggestions.map((suggestion, index) => (
                                     <TouchableOpacity
                                         key={suggestion.id}
                                         style={[
                                             styles.suggestionItem,
-                                            index === suggestions.length - 1 && styles.suggestionItemLast, // Đảm bảo mục cuối không có border dưới
+                                            index === suggestions.length - 1 && styles.suggestionItemLast,
                                         ]}
                                         onPress={() => handleSuggestionSelect(suggestion)}
                                     >
@@ -175,6 +187,7 @@ export default HomeScreen;
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        backgroundColor: '#f4f4f4',
     },
     flatListContent: {
         paddingHorizontal: 10,
@@ -182,43 +195,60 @@ const styles = StyleSheet.create({
     },
     cardContainer: {
         flex: 0.5,
+        margin: 8, // Increased margin for better spacing
     },
     footerText: {
         padding: 10,
         textAlign: 'center',
-    }, searchInput: {
-        height: 40,
-        borderColor: 'lightgray',
-        borderWidth: 1,
-        borderRadius: 5,
-        paddingHorizontal: 10,
-        marginBottom: 10,
-        backgroundColor: '#f9f9f9',
+        color: '#888',
     },
-
-
+    searchContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: '#ddd',
+        borderRadius: 50,
+        marginHorizontal: 20,
+        marginTop: 10,
+        marginBottom: 15,
+        backgroundColor: '#fff',
+        paddingVertical: 5,
+        elevation: 2,
+    },
+    searchIcon: {
+        marginLeft: 10,
+        marginRight: 5,
+    },
+    searchInput: {
+        flex: 1,
+        height: 40,
+        paddingHorizontal: 10,
+        borderRadius: 50,
+        color: '#333',
+    },
     suggestionsContainer: {
         backgroundColor: '#fff',
         borderWidth: 1,
-        borderColor: 'lightgray',
+        borderColor: '#ddd',
         borderRadius: 5,
         marginBottom: 10,
-        maxHeight: 200, // Giới hạn chiều cao của dropdown
-        elevation: 3, // Đổ bóng cho dropdown
+        maxHeight: 200, // Limit dropdown height
+        elevation: 3, // Shadow for dropdown
     },
     suggestionsContentContainer: {
-        paddingVertical: 5, // Đệm bên trong
+        paddingVertical: 5, // Padding inside
     },
     suggestionItem: {
         flexDirection: 'row',
         alignItems: 'center',
         padding: 10,
         borderBottomWidth: 1,
-        borderBottomColor: 'lightgray',
+        borderBottomColor: '#eee',
         backgroundColor: '#fff',
     },
     suggestionItemLast: {
-        borderBottomWidth: 0, // Không có border dưới ở mục cuối cùng
+        borderBottomWidth: 0,
     },
     suggestionImage: {
         width: 50,
@@ -236,10 +266,6 @@ const styles = StyleSheet.create({
     },
     suggestionBrand: {
         fontSize: 14,
-        color: '#888',
-    },
-
-    suggestionItemPressed: {
-        backgroundColor: '#e6e6e6', // Hiệu ứng khi nhấn vào
+        color: '#999',
     },
 });

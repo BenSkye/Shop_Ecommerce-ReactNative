@@ -1,6 +1,7 @@
 import React from 'react';
-import { View, Text, Pressable, Image, StyleSheet } from 'react-native';
-import FavoriteButton from './FavoriteButton';
+import { View, Text, Pressable, Image, StyleSheet, Animated } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+
 
 interface ArtToolCardProps {
     item: {
@@ -17,88 +18,116 @@ interface ArtToolCardProps {
 
 const ArtToolCard: React.FC<ArtToolCardProps> = ({ item, isFavorite, onPress, toggleFavorite }) => {
     const discountedPrice = item.limitedTimeDeal > 0 ? item.price * (1 - item.limitedTimeDeal) : item.price;
+    const scaleAnim = React.useRef(new Animated.Value(1)).current;
+
+    const handlePressIn = () => {
+        Animated.spring(scaleAnim, {
+            toValue: 0.98,
+            useNativeDriver: true,
+        }).start();
+    };
+
+    const handlePressOut = () => {
+        Animated.spring(scaleAnim, {
+            toValue: 1,
+            friction: 3,
+            tension: 40,
+            useNativeDriver: true,
+        }).start();
+    };
 
     return (
-        <Pressable onPress={onPress} style={styles.cardContainer}>
-            <Image source={{ uri: item.image }} style={styles.artToolImage} />
-            <View style={styles.artToolInfo}>
-                <Text style={styles.artToolName}>{item.artName}</Text>
-                {item.limitedTimeDeal > 0 ? (
-                    <>
-                        <Text style={styles.oldPrice}>${item.price.toFixed(2)}</Text>
-                        <Text style={styles.newPrice}>${discountedPrice.toFixed(2)}</Text>
+        <Animated.View style={[styles.cardContainer, { transform: [{ scale: scaleAnim }] }]}>
+            <Pressable onPress={onPress} onPressIn={handlePressIn} onPressOut={handlePressOut}>
+                <Image source={{ uri: item.image }} style={styles.artToolImage} />
+                {item.limitedTimeDeal > 0 && (
+                    <View style={styles.dealBadge}>
                         <Text style={styles.limitedDeal}>{item.limitedTimeDeal * 100}% OFF</Text>
-                    </>
-                ) : (
-                    <Text style={styles.artToolPrice}>${item.price.toFixed(2)}</Text>
+                    </View>
                 )}
-            </View>
-            <View style={styles.favoriteButtonContainer}>
-                <FavoriteButton isFavorite={isFavorite} onPress={() => toggleFavorite(item)} />
-            </View>
-        </Pressable>
+                <View style={styles.artToolInfo}>
+                    <Text style={styles.artToolName} numberOfLines={2} ellipsizeMode="tail">{item.artName}</Text>
+                    <View style={styles.priceContainer}>
+                        {item.limitedTimeDeal > 0 && (
+                            <Text style={styles.oldPrice}>${item.price.toFixed(2)}</Text>
+                        )}
+                        <Text style={styles.newPrice}>${discountedPrice.toFixed(2)}</Text>
+                    </View>
+                    <Pressable
+                        style={styles.favoriteButton}
+                        onPress={() => toggleFavorite(item)}
+                    >
+                        <MaterialCommunityIcons
+                            name={isFavorite ? "heart" : "heart-outline"}
+                            size={24}
+                            color={isFavorite ? "#FF6B6B" : "#333"}
+                        />
+                    </Pressable>
+                </View>
+            </Pressable>
+        </Animated.View>
     );
 };
 
 const styles = StyleSheet.create({
     cardContainer: {
-        flex: 1,
-        margin: 5,
-        padding: 5,
-        backgroundColor: '#f9f9f9',
-        borderRadius: 15,
+        backgroundColor: '#fff',
+        borderRadius: 12,
+        overflow: 'hidden',
+        marginBottom: 16,
+        elevation: 3,
         shadowColor: '#000',
-        shadowOpacity: 0.3,
-        shadowRadius: 15,
-        elevation: 5,
-        alignItems: 'center',
-        position: 'relative',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
     },
     artToolImage: {
         width: '100%',
-        height: 160,
+        height: 200,
         resizeMode: 'cover',
-        borderTopLeftRadius: 15,
-        borderTopRightRadius: 15,
     },
-    artToolInfo: {
-        marginTop: 10,
-        alignItems: 'center',
-    },
-    artToolName: {
-        fontSize: 20,
-        fontWeight: '600',
-        textAlign: 'center',
-        color: '#333',
-        marginBottom: 5,
-    },
-    oldPrice: {
-        fontSize: 16,
-        color: '#888',
-        textDecorationLine: 'line-through', // Strikethrough for old price
-        marginBottom: 5,
-    },
-    newPrice: {
-        fontSize: 22,
-        color: '#e63946', // Highlight new price color
-        fontWeight: '700',
-        marginBottom: 5,
-    },
-    artToolPrice: {
-        fontSize: 18,
-        color: '#666',
-        marginVertical: 5,
+    dealBadge: {
+        position: 'absolute',
+        top: 12,
+        left: 12,
+        backgroundColor: '#FF6B6B',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 4,
     },
     limitedDeal: {
-        color: '#e63946',
+        color: '#fff',
         fontWeight: 'bold',
-        fontSize: 18,
-        marginTop: 5,
+        fontSize: 12,
     },
-    favoriteButtonContainer: {
+    artToolInfo: {
+        padding: 16,
+    },
+    artToolName: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#333',
+        marginBottom: 8,
+    },
+    priceContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    oldPrice: {
+        fontSize: 14,
+        color: '#999',
+        textDecorationLine: 'line-through',
+        marginRight: 8,
+    },
+    newPrice: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#4CAF50',
+    },
+    favoriteButton: {
         position: 'absolute',
-        bottom: 10,
-        right: 10,
+        bottom: 16,
+        right: 16,
     },
 });
 

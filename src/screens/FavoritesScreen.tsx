@@ -1,98 +1,142 @@
-import React, { useState } from 'react';
-import { View, Text, FlatList, Image, Pressable, StyleSheet, ToastAndroid } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, FlatList, Image, Pressable, StyleSheet, ToastAndroid, SafeAreaView } from 'react-native';
 import { useFavorites } from '../context/FavoritesContext';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList, ArtItem } from '../types/types';
 import { Ionicons } from '@expo/vector-icons';
+
+type FavoritesScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Favorites'>;
+type FavoritesScreenRouteProp = RouteProp<RootStackParamList, 'Favorites'>;
 
 const FavoritesScreen = () => {
     const { favorites, removeFavorite, removeMultipleFavorites } = useFavorites();
     const [selectedItems, setSelectedItems] = useState<number[]>([]);
     const [selectAll, setSelectAll] = useState(false);
+    const navigation = useNavigation<FavoritesScreenNavigationProp>();
+    const route = useRoute<FavoritesScreenRouteProp>();
 
-    const toggleSelectAll = () => {
+    const { fromDetail, detailItem } = route.params ?? {};
+
+    const handleBackToDetail = useCallback(() => {
+        if (fromDetail && detailItem) {
+            navigation.navigate('Detail', { item: detailItem });
+        }
+    }, [fromDetail, detailItem, navigation]);
+
+    const toggleSelectAll = useCallback(() => {
         if (selectAll) {
-            setSelectedItems([]); // Deselect all
+            setSelectedItems([]);
         } else {
-            const allItemIds = favorites.map(item => item.id);
-            setSelectedItems(allItemIds); // Select all
+            setSelectedItems(favorites.map(item => item.id));
         }
-        setSelectAll(!selectAll); // Toggle select all
-    };
+        setSelectAll(!selectAll);
+    }, [selectAll, favorites]);
 
-    const toggleSelectItem = (id) => {
-        if (selectedItems.includes(id)) {
-            setSelectedItems(selectedItems.filter(itemId => itemId !== id)); // Deselect item
-        } else {
-            setSelectedItems([...selectedItems, id]); // Select item
-        }
-    };
+    const toggleSelectItem = useCallback((id: number) => {
+        setSelectedItems(prev =>
+            prev.includes(id) ? prev.filter(itemId => itemId !== id) : [...prev, id]
+        );
+    }, []);
 
-    const deleteSelectedItems = () => {
+    const deleteSelectedItems = useCallback(() => {
         removeMultipleFavorites(selectedItems);
         setSelectedItems([]);
         setSelectAll(false);
-        ToastAndroid.show("Selected items removed!", ToastAndroid.SHORT); // Toast notification
-    };
+        ToastAndroid.show("Selected items removed!", ToastAndroid.SHORT);
+    }, [removeMultipleFavorites, selectedItems]);
 
-    const renderFavorite = ({ item }) => (
-        <View style={styles.favoriteCard}>
-            <Pressable onPress={() => toggleSelectItem(item.id)} style={styles.checkbox}>
+    const renderFavorite = useCallback(({ item }: { item: ArtItem }) => (
+        <Pressable
+            style={styles.favoriteCard}
+            onPress={() => navigation.navigate('Detail', { item })}
+        >
+            <Pressable
+                onPress={() => toggleSelectItem(item.id)}
+                style={styles.checkbox}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
                 <Ionicons
                     name={selectedItems.includes(item.id) ? "checkbox" : "checkbox-outline"}
                     size={24}
-                    color="black"
+                    color="#4a4a4a"
                 />
             </Pressable>
             <Image source={{ uri: item.image }} style={styles.favoriteImage} />
             <View style={styles.favoriteInfo}>
-                <Text style={styles.artName}>{item.artName}</Text>
-                <Text style={styles.price}>${item.price}</Text>
-                <Pressable onPress={() => removeFavorite(item.id)}>
-                    <Ionicons name="trash" size={24} color="red" />
+                <Text style={styles.artName} numberOfLines={1}>{item.artName}</Text>
+                <Text style={styles.price}>${item.price.toFixed(2)}</Text>
+                <Pressable
+                    onPress={() => removeFavorite(item.id)}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                    <Ionicons name="trash-outline" size={24} color="#ff6b6b" />
                 </Pressable>
             </View>
-        </View>
-    );
+        </Pressable>
+    ), [selectedItems, toggleSelectItem, removeFavorite, navigation]);
 
     return (
-        <View style={styles.container}>
-            <Text style={styles.title}>Favorites</Text>
+        <SafeAreaView style={styles.container}>
+            {fromDetail && (
+                <Pressable style={styles.backButton} onPress={handleBackToDetail}>
+                    <Ionicons name="arrow-back" size={24} color="#4a4a4a" />
+                    <Text style={styles.backButtonText}>Back to Detail</Text>
+                </Pressable>
+            )}
+            <Text style={styles.title}>My Favorites</Text>
             {favorites.length > 0 ? (
                 <>
-                    {favorites.length > 1 && (
-                        <View style={styles.selectAllContainer}>
+                    <View style={styles.actionBar}>
+                        {favorites.length > 1 && (
                             <Pressable onPress={toggleSelectAll} style={styles.selectAllButton}>
                                 <Ionicons
                                     name={selectAll ? "checkbox" : "checkbox-outline"}
                                     size={24}
-                                    color="black"
+                                    color="#4a4a4a"
                                 />
-                                <Text style={styles.selectAllText}> Select All</Text>
+                                <Text style={styles.selectAllText}>Select All</Text>
                             </Pressable>
-                        </View>
-                    )}
-                    {selectedItems.length > 0 && (
-                        <Pressable style={styles.deleteButton} onPress={deleteSelectedItems}>
-                            <Text style={styles.deleteButtonText}>Delete Selected</Text>
-                        </Pressable>
-                    )}
+                        )}
+                        {selectedItems.length > 0 && (
+                            <Pressable style={styles.deleteButton} onPress={deleteSelectedItems}>
+                                <Ionicons name="trash-outline" size={20} color="white" />
+                                <Text style={styles.deleteButtonText}>Delete</Text>
+                            </Pressable>
+                        )}
+                    </View>
                     <FlatList
                         data={favorites}
                         renderItem={renderFavorite}
                         keyExtractor={item => item.id.toString()}
+                        showsVerticalScrollIndicator={false}
+                        contentContainerStyle={styles.listContainer}
                     />
                 </>
             ) : (
-                <Text style={styles.emptyText}>No favorites added yet!</Text>
+                <View style={styles.emptyContainer}>
+                    <Ionicons name="heart-outline" size={80} color="#ccc" />
+                    <Text style={styles.emptyText}>No favorites added yet!</Text>
+                </View>
             )}
-        </View>
+        </SafeAreaView>
     );
 };
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        padding: 20,
-        backgroundColor: '#f9f9f9',
+        backgroundColor: '#f8f9fa',
+    },
+    backButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 15,
+    },
+    backButtonText: {
+        marginLeft: 10,
+        fontSize: 16,
+        color: '#4a4a4a',
     },
     title: {
         fontSize: 28,
@@ -100,6 +144,39 @@ const styles = StyleSheet.create({
         marginBottom: 20,
         textAlign: 'center',
         color: '#333',
+    },
+    actionBar: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: 15,
+        marginBottom: 15,
+    },
+    selectAllButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    selectAllText: {
+        fontSize: 16,
+        marginLeft: 5,
+        color: '#4a4a4a',
+    },
+    deleteButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#ff6b6b',
+        paddingVertical: 8,
+        paddingHorizontal: 12,
+        borderRadius: 20,
+    },
+    deleteButtonText: {
+        color: 'white',
+        fontWeight: 'bold',
+        fontSize: 14,
+        marginLeft: 5,
+    },
+    listContainer: {
+        paddingHorizontal: 15,
     },
     favoriteCard: {
         flexDirection: 'row',
@@ -113,6 +190,9 @@ const styles = StyleSheet.create({
         shadowRadius: 10,
         elevation: 3,
     },
+    checkbox: {
+        marginRight: 10,
+    },
     favoriteImage: {
         width: 80,
         height: 80,
@@ -120,50 +200,28 @@ const styles = StyleSheet.create({
     },
     favoriteInfo: {
         flex: 1,
-        marginLeft: 10,
+        marginLeft: 15,
     },
     artName: {
-        fontSize: 20,
+        fontSize: 18,
         fontWeight: '600',
+        color: '#333',
+        marginBottom: 5,
     },
     price: {
         fontSize: 16,
-        color: '#666',
-        marginVertical: 5,
+        color: '#4caf50',
+        marginBottom: 5,
     },
-    selectAllContainer: {
-        flexDirection: 'row',
+    emptyContainer: {
+        flex: 1,
+        justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: 15,
-    },
-    selectAllButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    selectAllText: {
-        fontSize: 18,
-        marginLeft: 5,
-    },
-    deleteButton: {
-        backgroundColor: '#d9534f',
-        padding: 12,
-        borderRadius: 5,
-        marginBottom: 15,
-        alignItems: 'center',
-    },
-    deleteButtonText: {
-        color: 'white',
-        fontWeight: 'bold',
-        fontSize: 16,
     },
     emptyText: {
-        textAlign: 'center',
-        fontSize: 20,
-        color: '#777',
-        marginTop: 50,
-    },
-    checkbox: {
-        marginRight: 10,
+        marginTop: 20,
+        fontSize: 18,
+        color: '#999',
     },
 });
 

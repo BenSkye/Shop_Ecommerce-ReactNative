@@ -29,7 +29,7 @@ const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     const [showScrollToTop, setShowScrollToTop] = useState(false);
     const flatListRef = useRef<FlatList>(null);
     const [brands, setBrands] = useState<Category[]>([]);
-    const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
+    const [selectedBrand, setSelectedBrand] = useState<string | null>("all");
     const [searchTerm, setSearchTerm] = useState<string>('');
     const [showSuggestions, setShowSuggestions] = useState(false); // Hiển thị dropdown
     const [suggestions, setSuggestions] = useState<ArtTool[]>([]);  // Danh sách gợi ý
@@ -59,14 +59,14 @@ const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     }, [searchTerm, artTools]);
 
     const filteredArtTools = artTools.filter(tool =>
-        (selectedBrand ? tool.brand === selectedBrand : true) &&
+        (selectedBrand === "all" || tool.brand === selectedBrand) &&
         (tool.artName.toLowerCase().includes(searchTerm.toLowerCase()) ||
             tool.brand.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
     const getUniqueBrands = (artTools: ArtTool[]) => {
         const brandsSet = new Set(artTools.map(tool => tool.brand));
-        return Array.from(brandsSet).map(brand => ({ id: brand, name: brand }));
+        return [{ id: "all", name: "All" }, ...Array.from(brandsSet).map(brand => ({ id: brand, name: brand }))];
     };
 
     const onRefresh = () => {

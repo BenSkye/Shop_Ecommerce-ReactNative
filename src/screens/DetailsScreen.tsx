@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { View, Text, Image, Pressable, StyleSheet, Animated, FlatList, Dimensions } from 'react-native';
+import { View, Text, Image, Pressable, StyleSheet, Animated, FlatList, Dimensions, ScrollView } from 'react-native';
 import { useFavorites } from '../context/FavoritesContext';
 import { Ionicons } from '@expo/vector-icons';
 import Icon from 'react-native-vector-icons/FontAwesome';
@@ -10,7 +10,7 @@ import { RootStackParamList } from '../types/types';
 
 
 
-const { width: screenWidth } = Dimensions.get('window');
+
 
 type DetailScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Detail'>; // Create type for navigation prop
 
@@ -58,18 +58,14 @@ const DetailScreen = ({ route }) => {
     );
 
     const renderStars = (rating) => {
-        const stars = [];
-        for (let i = 1; i <= 5; i++) {
-            stars.push(
-                <Icon
-                    key={i}
-                    name={i <= rating ? 'star' : 'star-o'}
-                    size={18}
-                    color="#FFD700"
-                />
-            );
-        }
-        return stars;
+        return Array.from({ length: 5 }, (_, index) => (
+            <Icon
+                key={`star-${index}`}
+                name={index < rating ? 'star' : 'star-o'}
+                size={18}
+                color="#FFD700"
+            />
+        ));
     };
 
     const filteredComments = item.reviews.filter(review => {
@@ -77,70 +73,77 @@ const DetailScreen = ({ route }) => {
     });
     console.log('Filtered Comments:', filteredComments);
 
-    return (
-        <View style={{ flex: 1 }}>
-            <FlatList
-                ListHeaderComponent={
-                    <View style={styles.headerContainer}>
-                        <Image source={{ uri: item.image }} style={styles.image} />
-                        <View style={styles.detailsContainer}>
-                            <Text style={styles.artName}>{item.artName}</Text>
-                            <Text style={styles.price}>${item.price}</Text>
-                            {item.limitedTimeDeal > 0 && (
-                                <Animated.View style={{ transform: [{ scale: animatedValue }] }}>
-                                    <Text style={styles.discount}>{item.limitedTimeDeal * 100}% OFF</Text>
-                                </Animated.View>
-                            )}
-                            <Text style={styles.description}>{item.description}</Text>
-                            <Pressable
-                                onPress={handleToggleFavorite}
-                                style={({ pressed }) => [
-                                    styles.favoriteButton,
-                                    { backgroundColor: pressed ? '#e6e6e6' : '#f0f0f0' }
-                                ]}
-                            >
-                                <Ionicons
-                                    name={isFavorite ? 'heart' : 'heart-outline'}
-                                    size={30}
-                                    color={isFavorite ? 'red' : '#333'}
-                                />
-                            </Pressable>
-                        </View>
+    const renderEmptyComponent = () => (
+        <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>No comments found</Text>
+        </View>
+    );
 
-                        <View style={styles.filterContainer}>
-                            <Text style={styles.filterLabel}>Filter by Rating:</Text>
-                            <Picker
-                                selectedValue={selectedRating}
-                                onValueChange={(itemValue) => {
-                                    setSelectedRating(itemValue);
-                                    console.log('Selected rating:', itemValue); // Thêm dòng này để kiểm tra
-                                }}
-                                style={styles.picker}
-                            >
-                                <Picker.Item label="All" value="all" />
-                                <Picker.Item label="1 Star" value="1" />
-                                <Picker.Item label="2 Stars" value="2" />
-                                <Picker.Item label="3 Stars" value="3" />
-                                <Picker.Item label="4 Stars" value="4" />
-                                <Picker.Item label="5 Stars" value="5" />
-                            </Picker>
-                        </View>
-                    </View>
-                }
-                data={filteredComments}
-                renderItem={renderComment}
-                keyExtractor={(review, index) => index.toString()}
-                contentContainerStyle={{ paddingBottom: 20 }}
-                showsVerticalScrollIndicator={false}
-                getItemLayout={(data, index) => (
-                    { length: 70, offset: 70 * index, index }
-                )}
-            />
+    const renderRatingButton = (rating) => (
+        <Pressable
+            key={`rating-${rating}`}
+            style={[
+                styles.ratingButton,
+                selectedRating === rating.toString() && styles.selectedRatingButton
+            ]}
+            onPress={() => setSelectedRating(rating.toString())}
+        >
+            <Text style={[
+                styles.ratingButtonText,
+                selectedRating === rating.toString() && styles.selectedRatingButtonText
+            ]}>
+                {rating === 'all' ? 'All' : `${rating} ${rating === '1' ? 'Star' : 'Stars'}`}
+            </Text>
+        </Pressable>
+    );
+
+    return (
+        <View style={styles.container}>
+            <ScrollView showsVerticalScrollIndicator={false}>
+                <Image source={{ uri: item.image }} style={styles.image} />
+                <View style={styles.detailsContainer}>
+                    <Text style={styles.artName}>{item.artName}</Text>
+                    <Text style={styles.price}>${item.price}</Text>
+                    {item.limitedTimeDeal > 0 && (
+                        <Animated.View style={{ transform: [{ scale: animatedValue }] }}>
+                            <Text style={styles.discount}>{item.limitedTimeDeal * 100}% OFF</Text>
+                        </Animated.View>
+                    )}
+                    <Text style={styles.description}>{item.description}</Text>
+                    <Pressable
+                        onPress={handleToggleFavorite}
+                        style={({ pressed }) => [
+                            styles.favoriteButton,
+                            { backgroundColor: pressed ? '#e6e6e6' : '#f0f0f0' }
+                        ]}
+                    >
+                        <Ionicons
+                            name={isFavorite ? 'heart' : 'heart-outline'}
+                            size={30}
+                            color={isFavorite ? 'red' : '#333'}
+                        />
+                    </Pressable>
+                </View>
+
+                <View style={styles.filterContainer}>
+                    <Text style={styles.filterLabel}>Filter by Rating:</Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.ratingButtonsContainer}>
+                        {['all', 1, 2, 3, 4, 5].map(rating => renderRatingButton(rating))}
+                    </ScrollView>
+                </View>
+
+                <FlatList
+                    data={filteredComments}
+                    renderItem={renderComment}
+                    ListEmptyComponent={renderEmptyComponent}
+                    keyExtractor={(review, index) => index.toString()}
+                    scrollEnabled={false}
+                />
+            </ScrollView>
+
             <Pressable
                 style={styles.floatingButton}
-                onPress={() => navigation.navigate('Tabs', {
-                    screen: 'Favorites'
-                })}
+                onPress={() => navigation.navigate('Tabs', { screen: 'Favorites', params: { fromDetail: true, detailItem: item } })}
             >
                 <Ionicons name="bookmark" size={30} color="white" />
             </Pressable>
@@ -148,94 +151,114 @@ const DetailScreen = ({ route }) => {
     );
 };
 
-export default DetailScreen;
-
 const styles = StyleSheet.create({
-    headerContainer: {
-        paddingBottom: 20,
-        backgroundColor: '#fff',
+    container: {
+        flex: 1,
+        backgroundColor: '#f8f8f8',
     },
     image: {
-        width: screenWidth - 40,
+        width: '100%',
         height: 300,
-        borderRadius: 10,
-        marginBottom: 15,
-        alignSelf: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.8,
-        shadowRadius: 5,
-        elevation: 5,
+        resizeMode: 'cover',
     },
     detailsContainer: {
         backgroundColor: '#fff',
-        borderRadius: 15,
+        borderTopLeftRadius: 30,
+        borderTopRightRadius: 30,
         padding: 20,
-        marginHorizontal: 10,
+        marginTop: -30,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
+        shadowOffset: { width: 0, height: -5 },
         shadowOpacity: 0.1,
-        shadowRadius: 5,
-        elevation: 4,
+        shadowRadius: 6,
+        elevation: 5,
     },
     artName: {
-        fontSize: 24,
+        fontSize: 28,
         fontWeight: 'bold',
         color: '#333',
         marginBottom: 10,
-        textAlign: 'center',
     },
     price: {
-        fontSize: 18,
+        fontSize: 24,
         fontWeight: 'bold',
         color: '#1E90FF',
         marginBottom: 5,
-        textAlign: 'center',
     },
     discount: {
-        fontSize: 22,
+        fontSize: 20,
         fontWeight: 'bold',
-        color: 'red',
+        color: '#FF4500',
         marginBottom: 15,
-        textAlign: 'center',
     },
     description: {
         fontSize: 16,
         color: '#555',
         marginBottom: 20,
-        textAlign: 'center',
+        lineHeight: 24,
     },
     favoriteButton: {
+        alignSelf: 'center',
         width: 60,
         height: 60,
         borderRadius: 30,
         alignItems: 'center',
         justifyContent: 'center',
-        marginBottom: 20,
+        marginVertical: 10,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.3,
         shadowRadius: 5,
         elevation: 5,
     },
-    commentsTitle: {
-        fontSize: 20,
+    filterContainer: {
+        padding: 20,
+        backgroundColor: '#fff',
+    },
+    filterLabel: {
+        fontSize: 18,
         fontWeight: 'bold',
-        color: '#333',
         marginBottom: 10,
+    },
+    ratingButtonsContainer: {
+        flexDirection: 'row',
+        marginBottom: 10,
+    },
+    ratingButton: {
+        paddingHorizontal: 15,
+        paddingVertical: 8,
+        borderRadius: 20,
+        backgroundColor: '#f0f0f0',
+        marginRight: 10,
+    },
+    selectedRatingButton: {
+        backgroundColor: '#1E90FF',
+    },
+    ratingButtonText: {
+        fontSize: 14,
+        color: '#333',
+    },
+    selectedRatingButtonText: {
+        color: '#fff',
     },
     commentContainer: {
         flexDirection: 'row',
-        backgroundColor: '#f9f9f9',
+        backgroundColor: '#fff',
         padding: 15,
         borderRadius: 10,
         marginBottom: 10,
+        marginHorizontal: 20,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 3,
+        elevation: 2,
     },
     commentAvatar: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        marginRight: 10,
+        width: 50,
+        height: 50,
+        borderRadius: 25,
+        marginRight: 15,
     },
     commentContent: {
         flex: 1,
@@ -248,26 +271,10 @@ const styles = StyleSheet.create({
     commentText: {
         fontSize: 14,
         color: '#555',
+        marginBottom: 5,
     },
     starsContainer: {
         flexDirection: 'row',
-        marginTop: 5,
-    },
-    // Filter Styles
-    filterContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginVertical: 10,
-        marginHorizontal: 10,
-    },
-    filterLabel: {
-        fontSize: 16,
-        fontWeight: 'bold',
-    },
-    picker: {
-        width: 150,
-        height: 40,
     },
     floatingButton: {
         position: 'absolute',
@@ -284,4 +291,15 @@ const styles = StyleSheet.create({
         shadowRadius: 5,
         elevation: 5,
     },
+    emptyContainer: {
+        padding: 20,
+        alignItems: 'center',
+    },
+    emptyText: {
+        fontSize: 16,
+        color: '#555',
+        textAlign: 'center',
+    },
 });
+
+export default DetailScreen;
